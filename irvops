@@ -1,0 +1,53 @@
+import pandas as pd
+#import numpy as np
+
+dat={'percent':[70,60,50,30], 'rank_1':['A','B','C','D'], 'rank_2':['B','A','B','C'], 'rank_3': ['C','C','A','B'], 'rank_4':['D','D','D','A']}
+
+#irv=pd.DataFrame(dat, columns=['percent','rank_1','rank_2', 'rank_3','rank_4'])
+irv=pd.read_csv('IRV_data.csv')
+
+print(irv)
+
+#group candidates by rank 1
+irv_rank_1=irv.groupby('rank_1').percent.sum().reset_index()
+print(irv_rank_1)
+
+
+#determine minimum percent
+min_rank=irv_rank_1.percent.min()
+print(min_rank)
+
+#find candidate who matches minimum percent
+can_elim=irv_rank_1[irv_rank_1.percent==min_rank]
+print(can_elim.rank_1)
+print(can_elim.rank_1.to_numpy())
+
+# .replace rank_1 of eliminated candidate with rank_2, rank_2 with rank_3, rank_3 with rank_4 in new df
+mod_rows=irv[irv.rank_1=='Libertarian']
+print(mod_rows)
+print(mod_rows.rank_1)
+print(mod_rows.rank_2)
+
+#update or isin or combine_first have to be the key or fillna
+
+#make new data frame from irv of just eliminated candidates, then update irv with new df.rank_2
+
+        
+print(irv)
+
+print(irv.isin({'rank_1': can_elim.rank_1.to_numpy()}))
+
+modify_rows=irv[irv.isin({'rank_1': can_elim.rank_1.to_numpy()})==False]
+print(modify_rows)
+
+#modify_rows=irv[irv.rank_1=='Libertarian']
+#new_col=pd.(mod_rows.rank_2, name='rank_1', index=[6,7,8,9])
+
+#modify_rows.combine_first(mod_rows)
+irv_rd2=irv.update(mod_rows)
+print(irv_rd2)
+
+#irv_rd2=irv.replace(, [0,1,2,3])
+
+
+#print(irv_rd2)
