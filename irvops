@@ -9,45 +9,104 @@ irv=pd.read_csv('IRV_data.csv')
 print(irv)
 
 #group candidates by rank 1
-irv_rank_1=irv.groupby('rank_1').percent.sum().reset_index()
-print(irv_rank_1)
+irv_round_1=irv.groupby('rank_1').percent.sum().reset_index()
+print(irv_round_1)
 
+N=1 #number of candidates to be elected, >1 = STV
+droop=irv_round_1.percent.sum()/(N+1) #percent to win, works if percent is votes as well
+print(droop)
 
 #determine minimum percent
-min_rank=irv_rank_1.percent.min()
+min_rank=irv_round_1.percent.min()
 print(min_rank)
 
-#find candidate who matches minimum percent
-can_elim=irv_rank_1[irv_rank_1.percent==min_rank]
-print(can_elim.rank_1)
-print(can_elim.rank_1.to_numpy())
+elim_list=[]
 
-# .replace rank_1 of eliminated candidate with rank_2, rank_2 with rank_3, rank_3 with rank_4 in new df
-mod_rows=irv[irv.rank_1=='Libertarian']
-print(mod_rows)
-print(mod_rows.rank_1)
-print(mod_rows.rank_2)
+#find candidate who matches minimum percent
+can_elim=irv_round_1[irv_round_1.percent==min_rank].rank_1.item()
+print(can_elim)
+elim_list.append(can_elim)
+print(elim_list)
+
+# shift function .replace rank_1 of eliminated candidate with rank_2, rank_2 with rank_3, rank_3 with rank_4 in new df
 
 #update or isin or combine_first have to be the key or fillna
 
 #make new data frame from irv of just eliminated candidates, then update irv with new df.rank_2
+print(f"To replace:\n {can_elim}")
 
-        
-print(irv)
+old_val_1=irv[irv.rank_1==can_elim].rank_1  #replace rank 1 with 2 #old_values
+new_val_1=irv.loc[old_val_1.index, :].rank_2  #new_values
 
-print(irv.isin({'rank_1': can_elim.rank_1.to_numpy()}))
+old_val_2=irv[irv.rank_1==can_elim].rank_2 #replace rank 2 with 3
+new_val_2=irv.loc[old_val_2.index, :].rank_3
 
-modify_rows=irv[irv.isin({'rank_1': can_elim.rank_1.to_numpy()})==False]
-print(modify_rows)
+old_val_3=irv[irv.rank_1==can_elim].rank_3 #replace rank 3 with 4
+new_val_3=irv.loc[old_val_3.index, :].rank_4
 
-#modify_rows=irv[irv.rank_1=='Libertarian']
-#new_col=pd.(mod_rows.rank_2, name='rank_1', index=[6,7,8,9])
+print(f"Old values:\n {old_values}")
+print(f"New values:\n {new_values}")
 
-#modify_rows.combine_first(mod_rows)
-irv_rd2=irv.update(mod_rows)
-print(irv_rd2)
+irv_2=irv
 
-#irv_rd2=irv.replace(, [0,1,2,3])
+irv_2.loc[new_val_1.index, 'rank_1'] = new_val_1.loc[new_val_1.index]
+irv_2.loc[new_val_2.index, 'rank_2'] = new_val_2.loc[new_val_2.index]
+irv_2.loc[new_val_3.index, 'rank_3'] = new_val_3.loc[new_val_3.index]
+irv_2.loc[new_val_3.index, 'rank_4'] = None
+
+print(f"Update:\n {irv_2}")
+
+#round 2
+
+irv_round_2=irv_2.groupby('rank_1').percent.sum().reset_index()
+print(irv_round_2)
+
+min_rank=irv_round_2.percent.min()
+
+can_elim=irv_round_2[irv_round_2.percent==min_rank].rank_1.item()
+print(can_elim)
+elim_list.append(can_elim)
+print(elim_list)
+
+old_val_1=irv_2[irv_2.rank_1==can_elim].rank_1  #replace rank 1 with 2 #old_values
+new_val_1=irv_2.loc[old_val_1.index, :].rank_2  #new_values
+old_val_2=irv_2[irv_2.rank_1==can_elim].rank_2  #replace rank 2 with 3 #old_values
+new_val_2=irv_2.loc[old_val_1.index, :].rank_3  #new_values
+old_val_3=irv_2[irv_2.rank_1==can_elim].rank_3  #replace rank 3 with 4 #old_values
+new_val_3=irv_2.loc[old_val_1.index, :].rank_4  #new_values
+
+print(old_val_1)
+print(new_val_1)
+
+irv_2_5=irv_2
+
+irv_2_5.loc[new_val_1.index, 'rank_1'] = new_val_1.loc[new_val_1.index]
+irv_2_5.loc[new_val_2.index, 'rank_2'] = new_val_2.loc[new_val_2.index]
+irv_2_5.loc[new_val_3.index, 'rank_3'] = new_val_3.loc[new_val_3.index]
+irv_2_5.loc[new_val_3.index, 'rank_4'] = None
+
+print(irv_2_5)
 
 
-#print(irv_rd2)
+#check that rank 1 after shifting doesn't have any candidates from eliminated list
+
+for i in elim_list:
+    for j in new_val_1:
+        if i == j:
+            print(i)
+            can_elim=i
+            print(can_elim)
+            old_val_1=irv_2_5[irv_2_5.rank_1==can_elim].rank_1  #replace rank 1 with 2 #old_values
+            new_val_1=irv_2_5.loc[old_val_1.index, :].rank_2  #new_values
+            old_val_2=irv_2_5[irv_2_5.rank_1==can_elim].rank_2  #replace rank 2 with 3 #old_values
+            new_val_2=irv_2_5.loc[old_val_1.index, :].rank_3  #new_values
+            old_val_3=irv_2_5[irv_2_5.rank_1==can_elim].rank_3  #replace rank 3 with 4 #old_values
+            new_val_3=irv_2_5.loc[old_val_1.index, :].rank_4  #new_values
+            
+            irv_2_5.loc[new_val_1.index, 'rank_1'] = new_val_1.loc[new_val_1.index]
+            irv_2_5.loc[new_val_2.index, 'rank_2'] = new_val_2.loc[new_val_2.index]
+            irv_2_5.loc[new_val_3.index, 'rank_3'] = new_val_3.loc[new_val_3.index]
+
+print(irv_2_5)
+
+
