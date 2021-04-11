@@ -7,7 +7,7 @@ Ingests csv in this format:
 
 For initial values (to fill out csv): Find first rank percents for each candidate in race.  Then find all likely possibilities of rankings of other candidates for supporters of that candidate.  Multiply the percent of that candidates supporters you think are likely to vote that way (Group Modifier) by the first rank percent to give the first rank percent to put in the csv.  Initial step in code gets you back to first rank percent table as sanity check.
 
-![image](https://user-images.githubusercontent.com/81826611/114291977-6445e080-9a59-11eb-8d37-4ad774017d87.png)
+![image](https://user-images.githubusercontent.com/81826611/114292163-8c820f00-9a5a-11eb-8ad7-08d1fb6cf332.png)
 
 ![image](https://user-images.githubusercontent.com/81826611/114291995-91928e80-9a59-11eb-9050-fb0954b2cd78.png)
 
