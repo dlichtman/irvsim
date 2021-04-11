@@ -1,112 +1,74 @@
 import pandas as pd
-#import numpy as np
+import os
 
 dat={'percent':[70,60,50,30], 'rank_1':['A','B','C','D'], 'rank_2':['B','A','B','C'], 'rank_3': ['C','C','A','B'], 'rank_4':['D','D','D','A']}
 
 #irv=pd.DataFrame(dat, columns=['percent','rank_1','rank_2', 'rank_3','rank_4'])
-irv=pd.read_csv('IRV_data.csv')
+irv=pd.read_csv("IRV_data.csv")
 
-print(irv)
-
-#group candidates by rank 1
-irv_round_1=irv.groupby('rank_1').percent.sum().reset_index()
-print(irv_round_1)
+#group candidates by rank 1 and initialization
+print(f"Initial Full Rankings \n {irv}")
+irv_first_ranks=irv.groupby('rank_1').percent.sum().reset_index()
+num_can=len(irv_first_ranks)
+#print(num_can)
+print(f"Initial First Rankings \n {irv_first_ranks}")
 
 N=1 #number of candidates to be elected, >1 = STV
-droop=irv_round_1.percent.sum()/(N+1) #percent to win, works if percent is votes as well
+droop=irv_first_ranks.percent.sum()/(N+1) #percent to win, works if percent is votes as well
 print(droop)
-
-#determine minimum percent
-min_rank=irv_round_1.percent.min()
-print(min_rank)
-
 elim_list=[]
 
-#find candidate who matches minimum percent
-can_elim=irv_round_1[irv_round_1.percent==min_rank].rank_1.item()
-print(can_elim)
-elim_list.append(can_elim)
-print(elim_list)
+while num_can>N+1:
 
-# shift function .replace rank_1 of eliminated candidate with rank_2, rank_2 with rank_3, rank_3 with rank_4 in new df
+    min_rank=irv_first_ranks.percent.min()  #determine minimum percent
+    #print(min_rank)
+    can_elim=irv_first_ranks[irv_first_ranks.percent==min_rank].rank_1.item() #find candidate who matches minimum percent
+    #print(can_elim)
+    elim_list.append(can_elim)
+    #print(elim_list)
+    # shift function .replace rank_1 of eliminated candidate with rank_2, rank_2 with rank_3, rank_3 with rank_4 in new df
+    #make new data frame from irv of just eliminated candidates, then update irv with new df.rank_2
 
-#update or isin or combine_first have to be the key or fillna
+    old_val_1=irv[irv.rank_1==can_elim].rank_1  #replace rank 1 with 2 #old_values
+    new_val_1=irv.loc[old_val_1.index, :].rank_2  #new_values
 
-#make new data frame from irv of just eliminated candidates, then update irv with new df.rank_2
-print(f"To replace:\n {can_elim}")
+    old_val_2=irv[irv.rank_1==can_elim].rank_2 #replace rank 2 with 3
+    new_val_2=irv.loc[old_val_2.index, :].rank_3
 
-old_val_1=irv[irv.rank_1==can_elim].rank_1  #replace rank 1 with 2 #old_values
-new_val_1=irv.loc[old_val_1.index, :].rank_2  #new_values
+    old_val_3=irv[irv.rank_1==can_elim].rank_3 #replace rank 3 with 4
+    new_val_3=irv.loc[old_val_3.index, :].rank_4
 
-old_val_2=irv[irv.rank_1==can_elim].rank_2 #replace rank 2 with 3
-new_val_2=irv.loc[old_val_2.index, :].rank_3
+    irv.loc[new_val_1.index, 'rank_1'] = new_val_1.loc[new_val_1.index]
+    irv.loc[new_val_2.index, 'rank_2'] = new_val_2.loc[new_val_2.index]
+    irv.loc[new_val_3.index, 'rank_3'] = new_val_3.loc[new_val_3.index]
+    irv.loc[new_val_3.index, 'rank_4'] = None
+    
+    #also need to check that rank 1 after shifting doesn't have any candidates from eliminated list
+    #this only accounts for one shift but it's unlikely there would need to be more than this with only 4 candidates
 
-old_val_3=irv[irv.rank_1==can_elim].rank_3 #replace rank 3 with 4
-new_val_3=irv.loc[old_val_3.index, :].rank_4
+    for i in elim_list:
+        for j in new_val_1:
+            if i == j: #if any names in rank_1 match an eliminated candidate
+                #print(i)
+                can_elim=i
+                #print(can_elim)
+                old_val_1=irv[irv.rank_1==can_elim].rank_1  #replace rank 1 with 2 #old_values
+                new_val_1=irv.loc[old_val_1.index, :].rank_2  #new_values
+                old_val_2=irv[irv.rank_1==can_elim].rank_2  #replace rank 2 with 3 #old_values
+                new_val_2=irv.loc[old_val_1.index, :].rank_3  #new_values
+                old_val_3=irv[irv.rank_1==can_elim].rank_3  #replace rank 3 with 4 #old_values
+                new_val_3=irv.loc[old_val_1.index, :].rank_4  #new_values
 
-print(f"Old values:\n {old_values}")
-print(f"New values:\n {new_values}")
+                irv.loc[new_val_1.index, 'rank_1'] = new_val_1.loc[new_val_1.index]
+                irv.loc[new_val_2.index, 'rank_2'] = new_val_2.loc[new_val_2.index]
+                irv.loc[new_val_3.index, 'rank_3'] = new_val_3.loc[new_val_3.index]
+                #rank_4 should already be None here
+    
+    print(irv) #print updated irv table
+    irv_first_ranks=irv.groupby('rank_1').percent.sum().reset_index()
+    print(irv_first_ranks) #print updated table of first ranks
+    num_can=len(irv_first_ranks) #update number of candidates to close loop
 
-irv_2=irv
-
-irv_2.loc[new_val_1.index, 'rank_1'] = new_val_1.loc[new_val_1.index]
-irv_2.loc[new_val_2.index, 'rank_2'] = new_val_2.loc[new_val_2.index]
-irv_2.loc[new_val_3.index, 'rank_3'] = new_val_3.loc[new_val_3.index]
-irv_2.loc[new_val_3.index, 'rank_4'] = None
-
-print(f"Update:\n {irv_2}")
-
-#round 2
-
-irv_round_2=irv_2.groupby('rank_1').percent.sum().reset_index()
-print(irv_round_2)
-
-min_rank=irv_round_2.percent.min()
-
-can_elim=irv_round_2[irv_round_2.percent==min_rank].rank_1.item()
-print(can_elim)
-elim_list.append(can_elim)
-print(elim_list)
-
-old_val_1=irv_2[irv_2.rank_1==can_elim].rank_1  #replace rank 1 with 2 #old_values
-new_val_1=irv_2.loc[old_val_1.index, :].rank_2  #new_values
-old_val_2=irv_2[irv_2.rank_1==can_elim].rank_2  #replace rank 2 with 3 #old_values
-new_val_2=irv_2.loc[old_val_1.index, :].rank_3  #new_values
-old_val_3=irv_2[irv_2.rank_1==can_elim].rank_3  #replace rank 3 with 4 #old_values
-new_val_3=irv_2.loc[old_val_1.index, :].rank_4  #new_values
-
-print(old_val_1)
-print(new_val_1)
-
-irv_2_5=irv_2
-
-irv_2_5.loc[new_val_1.index, 'rank_1'] = new_val_1.loc[new_val_1.index]
-irv_2_5.loc[new_val_2.index, 'rank_2'] = new_val_2.loc[new_val_2.index]
-irv_2_5.loc[new_val_3.index, 'rank_3'] = new_val_3.loc[new_val_3.index]
-irv_2_5.loc[new_val_3.index, 'rank_4'] = None
-
-print(irv_2_5)
-
-
-#check that rank 1 after shifting doesn't have any candidates from eliminated list
-
-for i in elim_list:
-    for j in new_val_1:
-        if i == j:
-            print(i)
-            can_elim=i
-            print(can_elim)
-            old_val_1=irv_2_5[irv_2_5.rank_1==can_elim].rank_1  #replace rank 1 with 2 #old_values
-            new_val_1=irv_2_5.loc[old_val_1.index, :].rank_2  #new_values
-            old_val_2=irv_2_5[irv_2_5.rank_1==can_elim].rank_2  #replace rank 2 with 3 #old_values
-            new_val_2=irv_2_5.loc[old_val_1.index, :].rank_3  #new_values
-            old_val_3=irv_2_5[irv_2_5.rank_1==can_elim].rank_3  #replace rank 3 with 4 #old_values
-            new_val_3=irv_2_5.loc[old_val_1.index, :].rank_4  #new_values
-            
-            irv_2_5.loc[new_val_1.index, 'rank_1'] = new_val_1.loc[new_val_1.index]
-            irv_2_5.loc[new_val_2.index, 'rank_2'] = new_val_2.loc[new_val_2.index]
-            irv_2_5.loc[new_val_3.index, 'rank_3'] = new_val_3.loc[new_val_3.index]
-
-print(irv_2_5)
-
-
+winning_percent=irv_first_ranks.percent.max()
+winner=irv_first_ranks[irv_first_ranks.percent==winning_percent].rank_1.item()
+print("The winner is "+winner+" with "+str(winning_percent)+"%")
