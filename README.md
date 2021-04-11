@@ -13,6 +13,6 @@ For initial values (to fill out csv): Find first rank percents for each candidat
 
 Finds lowest percent candidate from rank_1, eliminates them and shifts the other candidates in their row left. Rank_2 to rank_1, rank_3 to rank_2, rank_4 to rank_3, rank_4 to Null.  Second round also checks if new rank_1 is a previously eliminated candidate and shift that row accordingly.
 
-Uses groupby() to see total percent for each candidate in each round.
+Uses groupby function to see total percent for each candidate in each round.
 
 Continues until there are two candidates left.
