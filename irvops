@@ -9,8 +9,12 @@ dat={'percent':[70,60,50,30], 'rank_1':['A','B','C','D'], 'rank_2':['B','A','B',
 irv=pd.read_csv('IRV_data.csv')
 
 col_names=irv.columns #columns
-col_len=len(col_name) #column array length
+col_len=len(col_names) #column array length
 col_range=np.arange(col_len) #range of column length array
+per_cent=col_names[0]  #flexible assignment of first column name representing percent
+rank1=col_names[1] #flexible assignment of first column name representing 1st rank names
+print(per_cent)
+print(rank1)
 
 col_range_mod=col_range[1:-1] #select columns after percent to second to last
 print(col_range_mod)
@@ -21,31 +25,68 @@ for i in col_range_mod:
 
 #group candidates by rank 1 (second column) and initialization
 print(f"Initial Full Rankings \n {irv}")
-irv_first_ranks=irv.groupby(col_names[1])[col_names[0]].sum().reset_index()  #group by 'rank_1' (second col), value is sum of percents
+irv_first_ranks=irv.groupby(rank1)[per_cent].sum().reset_index()  #group by 'rank_1' (second col), value is sum of percents
 num_can=len(irv_first_ranks)
 #print(num_can)
 print(f"Initial First Rankings \n {irv_first_ranks}")
 
-#first rank bar chart--------
-labels=irv_first_ranks[col_names[1]]
-plt.figure()
-plt.bar(range(len(irv_first_ranks)),irv_first_ranks[col_names[0]])
+#first rank bar chart-------- #make plots go next to each other
+plt.subplot(1,2,1)
+labels=irv_first_ranks[rank1]
+plt.bar(range(len(irv_first_ranks)),irv_first_ranks[per_cent])
 plt.ylabel("Percent")
 plt.xticks(range(len(irv_first_ranks)), labels, rotation=45)
-plt.show()
 
 #stacked bar chart-----------
-
-irv_pivot=irv.pivot_table(index='rank_1', columns='rank_2', values='percent', aggfunc='sum')
+plt.subplot(1,2,2)
+irv_pivot=irv.pivot_table(index=rank1, columns=col_names[2], values=per_cent, aggfunc='sum')
 #print(irv_pivot)
 
 irv_pivot.plot(kind='bar',stacked=True).legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+
+plt.show()
 #------------------------ 
 
+
 N=1 #number of candidates to be elected, >1 = STV
-droop=irv_first_ranks.percent.sum()/(N+1) #percent to win, works if percent is votes as well
+droop=irv_first_ranks[per_cent].sum()/(N+1) #percent to win, works if percent is votes as well
 #print(droop)
 elim_list=[]
+
+
+#test shift function using col index ref instead of explicit col names-------------------------------------------------------------
+print(col_names.values)
+min_rank=irv_first_ranks[per_cent].min()  #determine minimum percent
+print(min_rank)
+can_elim=irv_first_ranks[irv_first_ranks.percent==min_rank][rank1].item() #find candidate who matches minimum percent
+print(can_elim)
+
+'''i=1
+print(col_names[i])
+print(col_names[i+1])
+old_val=irv[irv[col_names[1]]==can_elim][col_names[i]]  #replace rank 1 with 2 #old_values
+new_val=irv.loc[old_val.index, :][col_names[i+1]]
+irv.loc[new_val.index, col_names[i]] = new_val.loc[new_val.index]
+print(old_val)
+print(new_val)'''
+
+
+for i in col_range_mod:
+    print(i)
+    print(col_names[i])
+    print(col_names[i+1])
+    old_val=irv[irv[rank1]==can_elim][col_names[i]]  #replace rank 1 with 2 #old_values
+    new_val=irv.loc[old_val.index, :][col_names[i+1]]
+    irv.loc[new_val.index, col_names[i]] = new_val.loc[new_val.index]
+    print(old_val)
+    print(new_val)
+
+'''for i in col_range_mod:
+    irv.loc[new_val.index, col_names[i]] = new_val.loc[new_val.index]'''
+
+print(irv)
+
+#only working for rank_2 to rank_1-------------------------------------------------------------------------------------------------
 
 round_count=1
 
@@ -53,10 +94,10 @@ while num_can>N+1:
     
     print("-------------START OF ROUND "+str(round_count)+" ----------------")
 
-    min_rank=irv_first_ranks.percent.min()  #determine minimum percent
+    min_rank=irv_first_ranks[per_cent].min()  #determine minimum percent
     #print(min_rank)
-    can_elim=irv_first_ranks[irv_first_ranks.percent==min_rank].rank_1.item() #find candidate who matches minimum percent
-    #print(can_elim)
+    can_elim=irv_first_ranks[irv_first_ranks[per_cent]==min_rank][rank1].item() #find candidate who matches minimum percent
+    print(can_elim)
     elim_list.append(can_elim)
     #print(elim_list)
     
@@ -65,59 +106,61 @@ while num_can>N+1:
     
     #working shift function that uses explicit column names
     
-    old_val_1=irv[irv.rank_1==can_elim].rank_1  #replace rank 1 with 2 #old_values
-    new_val_1=irv.loc[old_val_1.index, :].rank_2  #new_values
+    old_val_1=irv[irv[rank1]==can_elim][rank1]  #replace rank 1 with 2 #old_values
+    new_val_1=irv.loc[old_val_1.index, :][col_names[2]]   #new_values
+    
+    old_val_2=irv[irv[rank1]==can_elim][col_names[2]]  #replace rank 2 with 3
+    new_val_2=irv.loc[old_val_2.index, :][col_names[3]] 
+    
+    old_val_3=irv[irv[rank1]==can_elim][col_names[3]]  #replace rank 3 with 4
+    new_val_3=irv.loc[old_val_3.index, :][col_names[4]] 
 
-    old_val_2=irv[irv.rank_1==can_elim].rank_2 #replace rank 2 with 3
-    new_val_2=irv.loc[old_val_2.index, :].rank_3
-
-    old_val_3=irv[irv.rank_1==can_elim].rank_3 #replace rank 3 with 4
-    new_val_3=irv.loc[old_val_3.index, :].rank_4
-
-    irv.loc[new_val_1.index, 'rank_1'] = new_val_1.loc[new_val_1.index]
-    irv.loc[new_val_2.index, 'rank_2'] = new_val_2.loc[new_val_2.index]
-    irv.loc[new_val_3.index, 'rank_3'] = new_val_3.loc[new_val_3.index]
-    irv.loc[new_val_3.index, 'rank_4'] = None
+    irv.loc[new_val_1.index, rank1] = new_val_1.loc[new_val_1.index]
+    irv.loc[new_val_2.index, col_names[2]] = new_val_2.loc[new_val_2.index]
+    irv.loc[new_val_3.index, col_names[3]] = new_val_3.loc[new_val_3.index]
+    irv.loc[new_val_3.index, col_names[4]] = None
     
     
     #need to check that rank 1 after shifting doesn't have any candidates from eliminated list, multiple times
     
     for n in range(10):
         for i in elim_list:
-            for j in irv.rank_1:
+            for j in irv[rank1]:
                 if i == j: #if any names in rank_1 match an eliminated candidate
                     print(i)
-                    old_val_1=irv[irv.rank_1==i].rank_1  #replace rank 1 with 2 #old_values
-                    new_val_1=irv.loc[old_val_1.index, :].rank_2  #new_values
-                    old_val_2=irv[irv.rank_1==i].rank_2  #replace rank 2 with 3 #old_values
-                    new_val_2=irv.loc[old_val_1.index, :].rank_3  #new_values
-                    old_val_3=irv[irv.rank_1==i].rank_3  #replace rank 3 with 4 #old_values
-                    new_val_3=irv.loc[old_val_1.index, :].rank_4  #new_values
+                    can_elim=i
+                    old_val_1=irv[irv[rank1]==can_elim][rank1]  #replace rank 1 with 2 #old_values
+                    new_val_1=irv.loc[old_val_1.index, :][col_names[2]]   #new_values
 
-                    irv.loc[new_val_1.index, 'rank_1'] = new_val_1.loc[new_val_1.index]
-                    irv.loc[new_val_2.index, 'rank_2'] = new_val_2.loc[new_val_2.index]
-                    irv.loc[new_val_3.index, 'rank_3'] = new_val_3.loc[new_val_3.index]
+                    old_val_2=irv[irv[rank1]==can_elim][col_names[2]]  #replace rank 2 with 3
+                    new_val_2=irv.loc[old_val_2.index, :][col_names[3]] 
+
+                    old_val_3=irv[irv[rank1]==can_elim][col_names[3]]  #replace rank 3 with 4
+                    new_val_3=irv.loc[old_val_3.index, :][col_names[4]] 
+
+                    irv.loc[new_val_1.index, rank1] = new_val_1.loc[new_val_1.index]
+                    irv.loc[new_val_2.index, col_names[2]] = new_val_2.loc[new_val_2.index]
+                    irv.loc[new_val_3.index, col_names[3]] = new_val_3.loc[new_val_3.index]
+                    irv.loc[new_val_3.index, col_names[4]] = None
                     
-                    #if pd.isnull(irv.loc[new_val_1.index, 'rank_1']): #check if rank_1 is None, if so set as Exhausted
-                        #irv.loc[new_val_1.index, 'rank_1'] = "Exhausted"
                     #rank_4 should already be None here
                     #print(f"The correct list is: \n {irv}")
     
     print("Eliminated Candidate this round is "+ can_elim)
     print(str(elim_list)+" have been eliminated")
     print(irv) #print updated irv table
-    irv_first_ranks=irv.groupby('rank_1').percent.sum().reset_index()
+    irv_first_ranks=irv.groupby(rank1).percent.sum().reset_index()
     print(irv_first_ranks) #print updated table of first ranks
     
-    labels=irv_first_ranks.rank_1 #first rank bar chart
+    labels=irv_first_ranks[rank1] #first rank bar chart
     plt.figure()
-    plt.bar(range(len(irv_first_ranks)),irv_first_ranks.percent)
+    plt.bar(range(len(irv_first_ranks)),irv_first_ranks[per_cent])
     plt.xticks(range(len(irv_first_ranks)), labels, rotation=45)
     plt.show()
     
     #stacked bar chart-----------
 
-    irv_pivot=irv.pivot_table(index='rank_1', columns='rank_2', values='percent', aggfunc='sum')
+    irv_pivot=irv.pivot_table(index=rank1, columns=col_names[2], values=per_cent, aggfunc='sum')
     print(irv_pivot)
     
     #plt.figure()
@@ -129,31 +172,14 @@ while num_can>N+1:
     print("-------------END OF ROUND "+str(round_count)+" ----------------")
     round_count+=1
 
-exhausted=irv[irv.rank_1.isna()].percent.sum() #exhausted ballots
+exhausted=irv[irv[rank1].isna()][per_cent].sum() #exhausted ballots
 #print(exhausted)
-winning_percent=irv_first_ranks.percent.max()
-winner=irv_first_ranks[irv_first_ranks.percent==winning_percent].rank_1.item()
+winning_percent=irv_first_ranks[per_cent].max()
+winner=irv_first_ranks[irv_first_ranks[per_cent]==winning_percent][rank1].item()
 print("The winner is "+winner+" with "+str(winning_percent)+"%")
 print("There were "+str(exhausted)+"% exhausted ballots")
 
-
-'''#test shift function using col index ref instead of explicit col names ---NOT WORKING----
-print(col_names.values)
-print(col_in)
-min_rank=irv_first_ranks[col_names[0]].min()  #determine minimum percent
-print(min_rank)
-can_elim=irv_first_ranks[irv_first_ranks.percent==min_rank][col_names[1]].item() #find candidate who matches minimum percent
-print(can_elim)
-for i in col_range_mod:
-    print(col_names[i])
-    print(col_names[i+1])
-    old_val=irv[irv[col_names[1]]==can_elim][col_names[i]]  #replace rank 1 with 2 #old_values
-    new_val=irv.loc[old_val.index, :][col_names[i+1]]
-    irv.loc[new_val.index, col_names[i]] = new_val.loc[new_val.index]
-    print(old_val)
-    print(new_val)
-print(irv)'''
-#only working for rank_2 to rank_1
-
     
-#To do: how to handle exhausted ballots, make graphs (bar chart and stacked bar chart showing on-deck rankings) with matplotlib, webapp with sliders to change grouped and split percentages?     
+    
+#To do: how to handle exhausted ballots, make graphs (bar chart and stacked bar chart showing on-deck rankings) with matplotlib
+#webapp with sliders to change grouped and split percentages?     
