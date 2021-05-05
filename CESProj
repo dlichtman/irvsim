@@ -3,10 +3,11 @@ import os
 import numpy as np
 from matplotlib import pyplot as plt
 
+#prework: converted txt to CSV and added column names
 irv_dat=pd.read_csv('CESProj.csv')
 print(irv_dat)
 
-irv_dat['Votes']=1
+irv_dat['Votes']=1 #add new column to simulate 1 vote per ballot
 print(irv_dat)
 
 print(irv_dat['Rank 1'].unique())
@@ -15,7 +16,7 @@ print(irv_dat['Rank 1'].isnull().sum())
 
 cols=irv_dat.columns
 print(len(cols))
-ran=np.arange(4,8)
+ran=np.arange(4,8)  #range representing columns with Rank order
 for i in ran:
     print(cols[i])
 
@@ -44,6 +45,7 @@ print('There were '+str(overvotes)+' overvotes for Rank 1.')
 #remove overvotes from irv_dat
 irv_dat=irv_dat[~irv_dat['Rank 1'].str.contains('=', regex=False)]
 
+#helper vars
 col_names=irv_dat.columns #columns
 col_len=len(col_names) #column array length
 col_range=np.arange(col_len) #range of column length array
@@ -68,6 +70,7 @@ print(irv_pivot)
 
 irv_pivot.plot(kind='bar',stacked=True).legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
 
+#shift function: actually does the runoff given a data frame
 def shift(irv):
     old_val_1=irv[irv[rank1]==can_elim][rank1]  #replace rank 1 with 2 #old_values
     new_val_1=irv.loc[old_val_1.index, :][col_names[5]]   #new_values
