@@ -1,0 +1,198 @@
+import pandas as pd
+import os
+import numpy as np
+from matplotlib import pyplot as plt
+
+irv_dat=pd.read_csv('CESProj.csv')
+print(irv_dat)
+
+irv_dat['Votes']=1
+print(irv_dat)
+
+print(irv_dat['Rank 1'].unique())
+
+print(irv_dat['Rank 1'].isnull().sum())
+
+cols=irv_dat.columns
+print(len(cols))
+ran=np.arange(4,8)
+for i in ran:
+    print(cols[i])
+
+#split into df where Rank 1 is null and not null
+#null
+for i in ran:
+    irv_null=irv_dat[irv_dat['Rank 1'].isnull() & irv_dat[cols[i]].isnull()]
+#print(irv_null)
+print('There were '+str(len(irv_null))+' undervotes.')
+
+#not null
+irv_dat=irv_dat[~irv_dat['Rank 1'].isnull()]
+irv_cond=irv_dat
+
+#print(irv_dat)
+
+#count overvotes, rows where Rank 1 contains '='
+
+irv_dat_over=irv_dat[irv_dat['Rank 1'].str.contains('=', regex=False)]
+#print(irv_dat_over)
+
+overvotes=len(irv_dat_over)
+
+print('There were '+str(overvotes)+' overvotes for Rank 1.')
+
+#remove overvotes from irv_dat
+irv_dat=irv_dat[~irv_dat['Rank 1'].str.contains('=', regex=False)]
+
+col_names=irv_dat.columns #columns
+col_len=len(col_names) #column array length
+col_range=np.arange(col_len) #range of column length array
+per_cent=col_names[8]
+rank1=col_names[3]
+print(per_cent)
+print(rank1)
+
+#clean = from Rank columns
+#print(irv_dat)
+
+labels=irv_first_ranks[rank1] #initial bar chart of first rankings
+plt.bar(range(len(irv_first_ranks)),irv_first_ranks[per_cent])
+plt.ylabel("Votes")
+plt.xticks(range(len(irv_first_ranks)), labels, rotation=45)
+plt.show()
+
+#intial bar chart of first and second rankings
+irv_pivot=irv_dat.pivot_table(index=rank1, columns=col_names[4], values=per_cent, aggfunc='sum')
+#irv_pivot=irv_pivot[~irv_pivot.iloc[:0].str.contains('=')]
+print(irv_pivot)
+
+irv_pivot.plot(kind='bar',stacked=True).legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+
+def shift(irv):
+    old_val_1=irv[irv[rank1]==can_elim][rank1]  #replace rank 1 with 2 #old_values
+    new_val_1=irv.loc[old_val_1.index, :][col_names[5]]   #new_values
+    
+    old_val_2=irv[irv[rank1]==can_elim][col_names[5]]  #replace rank 2 with 3
+    new_val_2=irv.loc[old_val_2.index, :][col_names[6]] 
+    
+    old_val_3=irv[irv[rank1]==can_elim][col_names[6]]  #replace rank 3 with 4
+    new_val_3=irv.loc[old_val_3.index, :][col_names[7]] 
+    
+    old_val_4=irv[irv[rank1]==can_elim][col_names[7]]  #replace rank 4 with 5
+    new_val_4=irv.loc[old_val_4.index, :][col_names[8]] 
+
+    irv.loc[new_val_1.index, rank1] = new_val_1.loc[new_val_1.index]
+    irv.loc[new_val_2.index, col_names[5]] = new_val_2.loc[new_val_2.index]
+    irv.loc[new_val_3.index, col_names[6]] = new_val_3.loc[new_val_3.index]
+    irv.loc[new_val_3.index, col_names[7]] = new_val_4.loc[new_val_4.index]
+    irv.loc[new_val_3.index, col_names[8]] = None #set rank 5 to null
+
+round_count=1
+
+
+elim_list=[]
+max_before_elim=[]
+
+
+while num_can>2:
+    
+    print("-------------START OF ROUND "+str(round_count)+" ----------------")
+
+    min_rank=irv_first_ranks.Votes.min()  #determine minimum percent
+    print(min_rank)
+    can_elim=irv_first_ranks[irv_first_ranks.Votes==min_rank]['Rank 1'].item() #find candidate who matches minimum percent
+    can_list=can_list[can_list != can_elim]
+    print("Eliminated candidate this round: "+str(can_elim)+" with "+str(min_rank)+'%')
+    print("Candidates still in the race: "+str(can_list))
+    elim_list.append(can_elim)
+    max_before_elim.append(round(100*min_rank/vote_sum,2))
+    print("Candidates that have been eliminated: "+str(elim_list))
+    
+    '''for i in can_list:
+        if irv_dat['Rank 1'].str.contains(i):
+             irv.loc[:, 'Rank 1'] = None'''
+            
+    
+    shift(irv_dat)
+    
+    for n in range(10):  #overcheck to catch previously eliminated candidates that move up ranking
+        for i in elim_list:
+            for j in irv_dat[rank1]:
+                if i == j: #if any names in rank_1 match an eliminated candidate
+                    can_elim=i
+                    shift(irv_dat)
+    
+    #print(str(elim_list)+" have been eliminated")
+    irv_over=irv_dat[irv_dat['Rank 1'].str.contains('=', regex=False)==True]
+    print("There were "+str(len(irv_over))+" new overvotes.")
+    overvotes+=len(irv_over)
+    print("Total overvotes: "+str(overvotes))
+    irv_dat=irv_dat[irv_dat['Rank 1'].str.contains('=', regex=False)==False] #remove newly revealed overvotes
+    print(irv_dat) #print updated irv table
+    irv_first_ranks=irv_dat.groupby(rank1).Votes.sum().reset_index()
+    irv_first_ranks['percent']=100*irv_first_ranks.Votes/irv_first_ranks.Votes.sum()
+    #irv_first_ranks=irv_first_ranks[~irv_first_ranks['Rank 1'].str.contains('=')]
+    print(irv_first_ranks) #print updated table of first ranks
+    
+    #make updated bar chart
+    labels=irv_first_ranks[rank1]
+    plt.bar(range(len(irv_first_ranks)),irv_first_ranks[per_cent])
+    plt.ylabel("Votes")
+    plt.xticks(range(len(irv_first_ranks)), labels, rotation=45)
+    
+    #make updated x-ray bar and pivot
+    irv_pivot=irv_dat.pivot_table(index=rank1, columns=col_names[4], values=per_cent, aggfunc='sum')
+    #print(irv_pivot)
+    irv_pivot.plot(kind='bar',stacked=True).legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+    plt.show()
+    
+    num_can=len(irv_first_ranks)
+    round_count+=1
+
+irv_first_ranks=irv_first_ranks[['Rank 1','percent']]
+#make summary chart of highest % of each candidate before elimination
+summary=list(zip(elim_list,max_before_elim))
+print(summary)
+sum_df=pd.DataFrame(summary, columns=['Rank 1','percent'])
+frames=[sum_df,irv_first_ranks]
+all_can_sum=pd.concat(frames).reset_index(drop=True)
+all_can_sum.sort_values(by=['percent'], inplace=True)
+print(all_can_sum)
+
+labels=all_can_sum['Rank 1']
+plt.bar(range(len(all_can_sum)),all_can_sum['percent'])
+plt.ylabel("Percent")
+plt.xticks(range(len(all_can_sum)), labels, rotation=45)
+plt.title("Highest ranking for each candidate before elimination")
+plt.show()
+
+#condorcet calculation: iterate through rows in irv_cond and count when candidate A before B, A before C, etc.
+#print(np.arange(4,0))
+#Rank 1>Rank 2, Rank 1>Rank 3, Rank 1>Rank 4, Rank 1>Rank 5
+#Rank 2>Rank 3, Rank 2>Rank 4, Rank 2>Rank 5
+#Rank 3>Rank 4, Rank 3>Rank 5
+#Rank 4>Rank 5
+combos=[]
+for i in range(3,8):
+    for j in range(4,8):
+        for row in range(len(irv_cond)):
+            if(i<j): 
+                combos.append(str(irv_cond.iloc[row, i])+'>'+str(irv_cond.iloc[row, j])) #add condorcet combinations to list
+                #print(irv_cond.columns[i]+'>'+irv_cond.columns[j])
+                #add less to count when in later columns, total index can't be greater than 7
+                #combos.append(irv_cond.columns[i]+'>'+irv_cond.columns[j])
+  
+values, counts = np.unique(combos, return_counts=True) #count unique combinations \long compute time
+#print(values)
+#print(counts)
+
+combo_count=list(zip(values,counts)) #merge unique combinations and counts into new list
+#print(combo_count)
+
+combo_df=pd.DataFrame(combo_count, columns=['combination','count']) #transform list into new dataframe
+combo_df=combo_df[combo_df.combination.str.contains('=')==False] #remove combinations where values are equal
+combo_df=combo_df[combo_df.combination.str.contains('nan')==False] #remove combinations where values are null
+combo_df[['Greater','Lesser']]=combo_df.combination.str.split(">", expand=True) #split combination column
+print(combo_df)
+combo_pivot=combo_df.pivot(index='Greater',columns='Lesser',values='count')  #pivot into condorcet table
+print(combo_pivot)
