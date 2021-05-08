@@ -3,29 +3,34 @@ import os
 import numpy as np
 from matplotlib import pyplot as plt
 
-#prework: converted txt to CSV and added column names
-irv_dat=pd.read_csv('CESProj.csv')
+irv_dat=pd.read_csv('CES__DADR_DATA_2021.txt', sep='\t', header=None, names=['Ward Number', 'Memory Card', 'Ballot number \
+','Rank 1', 'Rank 2','Rank 3','Rank 4','Rank 5']) #txtfile was tab delim
 print(irv_dat)
 
-irv_dat['Votes']=1 #add new column to simulate 1 vote per ballot
-print(irv_dat)
+irv_dat['Votes']=1
+#print(irv_dat)
 
-print(irv_dat['Rank 1'].unique())
+init_votes=len(irv_dat)
 
-print(irv_dat['Rank 1'].isnull().sum())
+print("There were "+str(init_votes)+" votes cast in this election")
+
+#for col in irv_dat.columns:
+    #print(irv_dat[col].value_counts())  #examine rank counts
+
+
+#print(irv_dat['Rank 1'].isnull().sum())
 
 cols=irv_dat.columns
-print(len(cols))
-ran=np.arange(4,8)  #range representing columns with Rank order
-for i in ran:
-    print(cols[i])
+#print(len(cols))
+ran=np.arange(4,8)
 
 #split into df where Rank 1 is null and not null
 #null
 for i in ran:
     irv_null=irv_dat[irv_dat['Rank 1'].isnull() & irv_dat[cols[i]].isnull()]
 #print(irv_null)
-print('There were '+str(len(irv_null))+' undervotes.')
+undervotes=len(irv_null)
+print('There were '+str(undervotes)+' undervotes.')
 
 #not null
 irv_dat=irv_dat[~irv_dat['Rank 1'].isnull()]
@@ -34,28 +39,38 @@ irv_cond=irv_dat
 #print(irv_dat)
 
 #count overvotes, rows where Rank 1 contains '='
-
 irv_dat_over=irv_dat[irv_dat['Rank 1'].str.contains('=', regex=False)]
 #print(irv_dat_over)
 
 overvotes=len(irv_dat_over)
+exhausted_ct=overvotes+undervotes #exhausted count is undervotes+overvotes+null votes during elimination
 
 print('There were '+str(overvotes)+' overvotes for Rank 1.')
+print(exhausted_ct)
 
 #remove overvotes from irv_dat
 irv_dat=irv_dat[~irv_dat['Rank 1'].str.contains('=', regex=False)]
 
-#helper vars
 col_names=irv_dat.columns #columns
 col_len=len(col_names) #column array length
 col_range=np.arange(col_len) #range of column length array
 per_cent=col_names[8]
 rank1=col_names[3]
-print(per_cent)
-print(rank1)
+#print(per_cent)
+#print(rank1)
 
 #clean = from Rank columns
 #print(irv_dat)
+
+irv_first_ranks=irv_dat.groupby(rank1)[per_cent].sum().reset_index()  #group by 'rank_1', value is percent of votes
+irv_first_ranks=irv_first_ranks[~irv_first_ranks['Rank 1'].str.contains('=')]
+vote_sum=irv_first_ranks.Votes.sum()
+irv_first_ranks['percent']=round(100*irv_first_ranks.Votes/vote_sum,2)
+print(f"Initial First Rankings \n {irv_first_ranks}")
+
+num_can=len(irv_first_ranks)
+can_list=irv_first_ranks['Rank 1'].to_numpy() #make candidate list into printable array
+print("Candidates still in the race are "+str(can_list))
 
 labels=irv_first_ranks[rank1] #initial bar chart of first rankings
 plt.bar(range(len(irv_first_ranks)),irv_first_ranks[per_cent])
@@ -66,49 +81,50 @@ plt.show()
 #intial bar chart of first and second rankings
 irv_pivot=irv_dat.pivot_table(index=rank1, columns=col_names[4], values=per_cent, aggfunc='sum')
 #irv_pivot=irv_pivot[~irv_pivot.iloc[:0].str.contains('=')]
-print(irv_pivot)
+#print(irv_pivot)
 
 irv_pivot.plot(kind='bar',stacked=True).legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
 
-#shift function: actually does the runoff given a data frame
 def shift(irv):
-    old_val_1=irv[irv[rank1]==can_elim][rank1]  #replace rank 1 with 2 #old_values
-    new_val_1=irv.loc[old_val_1.index, :][col_names[5]]   #new_values
+    old_val_1=irv[irv[col_names[3]]==can_elim][col_names[3]]  #replace rank 1 with 2 #old_values
+    new_val_1=irv.loc[old_val_1.index, :][col_names[4]]   #new_values
     
-    old_val_2=irv[irv[rank1]==can_elim][col_names[5]]  #replace rank 2 with 3
-    new_val_2=irv.loc[old_val_2.index, :][col_names[6]] 
+    old_val_2=irv[irv[col_names[3]]==can_elim][col_names[4]]  #replace rank 2 with 3
+    new_val_2=irv.loc[old_val_2.index, :][col_names[5]] 
     
-    old_val_3=irv[irv[rank1]==can_elim][col_names[6]]  #replace rank 3 with 4
+    old_val_3=irv[irv[col_names[3]]==can_elim][col_names[5]]  #replace rank 3 with 4
     new_val_3=irv.loc[old_val_3.index, :][col_names[7]] 
     
-    old_val_4=irv[irv[rank1]==can_elim][col_names[7]]  #replace rank 4 with 5
+    old_val_4=irv[irv[col_names[3]]==can_elim][col_names[6]]  #replace rank 4 with 5
     new_val_4=irv.loc[old_val_4.index, :][col_names[8]] 
 
-    irv.loc[new_val_1.index, rank1] = new_val_1.loc[new_val_1.index]
-    irv.loc[new_val_2.index, col_names[5]] = new_val_2.loc[new_val_2.index]
-    irv.loc[new_val_3.index, col_names[6]] = new_val_3.loc[new_val_3.index]
-    irv.loc[new_val_3.index, col_names[7]] = new_val_4.loc[new_val_4.index]
-    irv.loc[new_val_3.index, col_names[8]] = None #set rank 5 to null
+    irv.loc[new_val_1.index, col_names[3]] = new_val_1.loc[new_val_1.index]
+    irv.loc[new_val_2.index, col_names[4]] = new_val_2.loc[new_val_2.index]
+    irv.loc[new_val_3.index, col_names[5]] = new_val_3.loc[new_val_3.index]
+    irv.loc[new_val_3.index, col_names[6]] = new_val_4.loc[new_val_4.index]
+    irv.loc[new_val_3.index, col_names[7]] = None #set rank 5 to null
 
 round_count=1
 
 
-elim_list=[]
-max_before_elim=[]
+elim_list=[] #list of eliminated candidates
+max_before_elim=[]  #list of maximum percents before candidate is eliminated (for summary)
 
+irv_first_initial=irv_first_ranks #save current df for merging to make summary table
 
 while num_can>2:
     
     print("-------------START OF ROUND "+str(round_count)+" ----------------")
-
-    min_rank=irv_first_ranks.Votes.min()  #determine minimum percent
-    print(min_rank)
-    can_elim=irv_first_ranks[irv_first_ranks.Votes==min_rank]['Rank 1'].item() #find candidate who matches minimum percent
+    
+    min_rank=irv_first_ranks.percent.min()  #determine minimum percent
+    #print(min_rank)
+    can_elim=irv_first_ranks[irv_first_ranks.percent==min_rank]['Rank 1'].item() #find candidate who matches minimum percent
+    can_elim_current=can_elim #for summary table
     can_list=can_list[can_list != can_elim]
     print("Eliminated candidate this round: "+str(can_elim)+" with "+str(min_rank)+'%')
     print("Candidates still in the race: "+str(can_list))
     elim_list.append(can_elim)
-    max_before_elim.append(round(100*min_rank/vote_sum,2))
+    max_before_elim.append(min_rank)
     print("Candidates that have been eliminated: "+str(elim_list))
     
     '''for i in can_list:
@@ -126,15 +142,20 @@ while num_can>2:
                     shift(irv_dat)
     
     #print(str(elim_list)+" have been eliminated")
-    irv_over=irv_dat[irv_dat['Rank 1'].str.contains('=', regex=False)==True]
-    print("There were "+str(len(irv_over))+" new overvotes.")
-    overvotes+=len(irv_over)
-    print("Total overvotes: "+str(overvotes))
+    irv_na=irv_dat[irv_dat['Rank 1'].isna()] #count newly exhausted votes
+    exhausted=len(irv_na)
+    
+    irv_over=irv_dat[irv_dat['Rank 1'].str.contains('=', regex=False)==True] #count overvotes
+    overvotes=len(irv_over)
+    #print("There were "+str(len(irv_over))+" new overvotes.")
+    #print("Total overvotes: "+str(overvotes))
+    exhausted_ct+=exhausted+overvotes
+    print("There were "+str(exhausted+overvotes)+" exhausted votes this round.")
+    print("Total exhausted votes: "+str(exhausted_ct))
     irv_dat=irv_dat[irv_dat['Rank 1'].str.contains('=', regex=False)==False] #remove newly revealed overvotes
-    print(irv_dat) #print updated irv table
+    #print(irv_dat) #print updated irv table
     irv_first_ranks=irv_dat.groupby(rank1).Votes.sum().reset_index()
-    irv_first_ranks['percent']=100*irv_first_ranks.Votes/irv_first_ranks.Votes.sum()
-    #irv_first_ranks=irv_first_ranks[~irv_first_ranks['Rank 1'].str.contains('=')]
+    irv_first_ranks['percent']=round(100*irv_first_ranks.Votes/irv_first_ranks.Votes.sum(),2)
     print(irv_first_ranks) #print updated table of first ranks
     
     #make updated bar chart
@@ -149,25 +170,55 @@ while num_can>2:
     irv_pivot.plot(kind='bar',stacked=True).legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
     plt.show()
     
+    #construct summary table
+    irv_first_ranks_pct=irv_first_ranks
+    sum_tab=irv_first_initial.merge(irv_first_ranks, how='outer', on='Rank 1')
+    irv_first_initial=sum_tab
+    
     num_can=len(irv_first_ranks)
     round_count+=1
 
-irv_first_ranks=irv_first_ranks[['Rank 1','percent']]
+#irv_first_ranks=irv_first_ranks[['Rank 1','percent']]
+
 #make summary chart of highest % of each candidate before elimination
 summary=list(zip(elim_list,max_before_elim))
-print(summary)
+#print(summary)
 sum_df=pd.DataFrame(summary, columns=['Rank 1','percent'])
-frames=[sum_df,irv_first_ranks]
+print(sum_df)
+irv_first_ranks_pct.pop('Votes')
+print(irv_first_ranks_pct)
+frames=[sum_df,irv_first_ranks_pct]
 all_can_sum=pd.concat(frames).reset_index(drop=True)
 all_can_sum.sort_values(by=['percent'], inplace=True)
 print(all_can_sum)
 
+#make bar chart of highest % of each candidate before elimination
 labels=all_can_sum['Rank 1']
 plt.bar(range(len(all_can_sum)),all_can_sum['percent'])
 plt.ylabel("Percent")
 plt.xticks(range(len(all_can_sum)), labels, rotation=45)
-plt.title("Highest ranking for each candidate before elimination")
+plt.title("Highest percent support for each candidate before elimination")
 plt.show()
+
+#make round by round chart
+#print(sum_tab)
+sum_tab.drop(['percent_x','percent_y','percent'], axis=1, inplace=True) #remove pct columns
+#print(sum_tab)
+sum_tab.columns=['Candidates','Initial Count','Round_1','Round_2','Round_3','Round_4'] #rename columns
+sum_tab.sort_values(by='Initial Count', ascending=False, inplace=True, ignore_index=True)
+print(sum_tab)
+init_fin=init_votes-sum_tab.Round_4.sum()
+print("There were "+str(init_fin)+" exhausted votes over the course of the election. "+str(round(100*init_fin/init_votes,2))+"% of the total.")
+print("The winner received "+str(round(100*sum_tab.Round_4.max()/init_votes,2))+"% of the initial votes and "+str(all_can_sum.percent.max())+"% of the final two candidate vote.")
+
+#make round by round chart with difference cols
+sum_tab_diff=sum_tab
+sum_tab_diff['C05']=sum_tab_diff['Round_1']-sum_tab_diff['Initial Count']
+sum_tab_diff['C06']=sum_tab_diff['Round_2']-sum_tab_diff['Round_1']
+sum_tab_diff['C01']=sum_tab_diff['Round_3']-sum_tab_diff['Round_2']
+sum_tab_diff['C02']=sum_tab_diff['Round_4']-sum_tab_diff['Round_3']
+sum_tab_diff=sum_tab_diff.reindex(columns=['Candidates','Initial Count','C05','Round_1','C06','Round_2','C01','Round_3','C02','Round_4'])
+print(sum_tab_diff)
 
 #condorcet calculation: iterate through rows in irv_cond and count when candidate A before B, A before C, etc.
 #print(np.arange(4,0))
@@ -194,8 +245,30 @@ combo_count=list(zip(values,counts)) #merge unique combinations and counts into 
 
 combo_df=pd.DataFrame(combo_count, columns=['combination','count']) #transform list into new dataframe
 combo_df=combo_df[combo_df.combination.str.contains('=')==False] #remove combinations where values are equal
-combo_df=combo_df[combo_df.combination.str.contains('nan')==False] #remove combinations where values are null
-combo_df[['Greater','Lesser']]=combo_df.combination.str.split(">", expand=True) #split combination column
+combo_df=combo_df[combo_df.combination.str.contains('nan>nan')==False] #remove combinations where values are null
+
+combo_df[['More Preferred','Less Preferred']]=combo_df.combination.str.split(">", expand=True) #split combination column
 print(combo_df)
-combo_pivot=combo_df.pivot(index='Greater',columns='Lesser',values='count')  #pivot into condorcet table
+combo_pivot=combo_df.pivot(index='More Preferred',columns='Less Preferred',values='count')  #pivot into condorcet table
+#print(combo_pivot)
+
+#if CX>nan, implies that CX>CY, CX>CZ,etc.
+#add CX>nan value to every other col and delete CX>nan col in pivot
+
+for col in combo_pivot.columns:
+    if col!='nan':
+        combo_pivot[col]+=combo_pivot.nan
+
+combo_pivot.pop('nan') #remove nan column after adding values to other columns
+print("\n Pairwise Comparison Table (counts)")
 print(combo_pivot)
+
+#transpose for % calculation
+comboT=combo_pivot.T
+#print(comboT)
+
+cond_percent=round(100*combo_pivot/(combo_pivot+comboT),2)
+print("\n Pairwise Comparison Table (percentages)")
+print(cond_percent)
+
+    
