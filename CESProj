@@ -274,6 +274,7 @@ comboT=combo_pivot.T
 #print(comboT)
 
 cond_percent=round(100*combo_pivot/(combo_pivot+comboT),2)
+cond_percent['Victories']=cond_percent[cond_percent>50].count(axis=1)
 print("\n Pairwise Comparison Table (percentages)")
 print(cond_percent)
 
