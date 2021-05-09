@@ -1,3 +1,8 @@
+import pandas as pd
+import os
+import numpy as np
+from matplotlib import pyplot as plt
+
 irv_dat=pd.read_csv('CES__DADR_DATA_2021.txt', sep='\t', header=None, names=['Ward Number', 'Memory Card', 'Ballot number \
 ','Rank 1', 'Rank 2','Rank 3','Rank 4','Rank 5']) #txtfile was tab delim, 
 print(irv_dat)
