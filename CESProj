@@ -1,10 +1,5 @@
-import pandas as pd
-import os
-import numpy as np
-from matplotlib import pyplot as plt
-
 irv_dat=pd.read_csv('CES__DADR_DATA_2021.txt', sep='\t', header=None, names=['Ward Number', 'Memory Card', 'Ballot number \
-','Rank 1', 'Rank 2','Rank 3','Rank 4','Rank 5']) #txtfile was tab delim
+','Rank 1', 'Rank 2','Rank 3','Rank 4','Rank 5']) #txtfile was tab delim, 
 print(irv_dat)
 
 irv_dat['Votes']=1
@@ -14,8 +9,8 @@ init_votes=len(irv_dat)
 
 print("There were "+str(init_votes)+" votes cast in this election")
 
-#for col in irv_dat.columns:
-    #print(irv_dat[col].value_counts())  #examine rank counts
+#for col in irv_dat.columns: #examine number of times each candidate was in each rank
+#    print(irv_dat[col].value_counts())
 
 
 #print(irv_dat['Rank 1'].isnull().sum())
@@ -46,7 +41,7 @@ overvotes=len(irv_dat_over)
 exhausted_ct=overvotes+undervotes #exhausted count is undervotes+overvotes+null votes during elimination
 
 print('There were '+str(overvotes)+' overvotes for Rank 1.')
-print(exhausted_ct)
+print("Total Exhausted Votes"+str(exhausted_ct))
 
 #remove overvotes from irv_dat
 irv_dat=irv_dat[~irv_dat['Rank 1'].str.contains('=', regex=False)]
@@ -71,6 +66,7 @@ print(f"Initial First Rankings \n {irv_first_ranks}")
 num_can=len(irv_first_ranks)
 can_list=irv_first_ranks['Rank 1'].to_numpy() #make candidate list into printable array
 print("Candidates still in the race are "+str(can_list))
+#print(f"Initial First Rankings \n {irv_first_ranks}")
 
 labels=irv_first_ranks[rank1] #initial bar chart of first rankings
 plt.bar(range(len(irv_first_ranks)),irv_first_ranks[per_cent])
@@ -109,6 +105,7 @@ round_count=1
 
 elim_list=[] #list of eliminated candidates
 max_before_elim=[]  #list of maximum percents before candidate is eliminated (for summary)
+exhaust_list=['Exhausted',exhausted_ct] #list of exhausted votes to append to summary df
 
 irv_first_initial=irv_first_ranks #save current df for merging to make summary table
 
@@ -152,6 +149,7 @@ while num_can>2:
     exhausted_ct+=exhausted+overvotes
     print("There were "+str(exhausted+overvotes)+" exhausted votes this round.")
     print("Total exhausted votes: "+str(exhausted_ct))
+    exhaust_list.append(exhausted_ct)
     irv_dat=irv_dat[irv_dat['Rank 1'].str.contains('=', regex=False)==False] #remove newly revealed overvotes
     #print(irv_dat) #print updated irv table
     irv_first_ranks=irv_dat.groupby(rank1).Votes.sum().reset_index()
@@ -166,7 +164,7 @@ while num_can>2:
     
     #make updated x-ray bar and pivot
     irv_pivot=irv_dat.pivot_table(index=rank1, columns=col_names[4], values=per_cent, aggfunc='sum')
-    #print(irv_pivot)
+    print(irv_pivot)
     irv_pivot.plot(kind='bar',stacked=True).legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
     plt.show()
     
@@ -184,9 +182,9 @@ while num_can>2:
 summary=list(zip(elim_list,max_before_elim))
 #print(summary)
 sum_df=pd.DataFrame(summary, columns=['Rank 1','percent'])
-print(sum_df)
+#print(sum_df)
 irv_first_ranks_pct.pop('Votes')
-print(irv_first_ranks_pct)
+#print(irv_first_ranks_pct)
 frames=[sum_df,irv_first_ranks_pct]
 all_can_sum=pd.concat(frames).reset_index(drop=True)
 all_can_sum.sort_values(by=['percent'], inplace=True)
@@ -204,20 +202,23 @@ plt.show()
 #print(sum_tab)
 sum_tab.drop(['percent_x','percent_y','percent'], axis=1, inplace=True) #remove pct columns
 #print(sum_tab)
-sum_tab.columns=['Candidates','Initial Count','Round_1','Round_2','Round_3','Round_4'] #rename columns
-sum_tab.sort_values(by='Initial Count', ascending=False, inplace=True, ignore_index=True)
+sum_tab.columns=['Candidates','Initial_Count','Round_1','Round_2','Round_3','Round_4'] #rename columns
+sum_tab.sort_values(by='Initial_Count', ascending=False, inplace=True, ignore_index=True)
+#print(sum_tab)
+#print(exhaust_list)
+sum_tab.loc[len(sum_tab)]=exhaust_list #add list of exhausted votes to summary df
 print(sum_tab)
-init_fin=init_votes-sum_tab.Round_4.sum()
+init_fin=int(sum_tab[sum_tab.Candidates=='Exhausted'].Round_4)
 print("There were "+str(init_fin)+" exhausted votes over the course of the election. "+str(round(100*init_fin/init_votes,2))+"% of the total.")
 print("The winner received "+str(round(100*sum_tab.Round_4.max()/init_votes,2))+"% of the initial votes and "+str(all_can_sum.percent.max())+"% of the final two candidate vote.")
 
 #make round by round chart with difference cols
 sum_tab_diff=sum_tab
-sum_tab_diff['C05']=sum_tab_diff['Round_1']-sum_tab_diff['Initial Count']
+sum_tab_diff['C05']=sum_tab_diff['Round_1']-sum_tab_diff['Initial_Count']
 sum_tab_diff['C06']=sum_tab_diff['Round_2']-sum_tab_diff['Round_1']
 sum_tab_diff['C01']=sum_tab_diff['Round_3']-sum_tab_diff['Round_2']
 sum_tab_diff['C02']=sum_tab_diff['Round_4']-sum_tab_diff['Round_3']
-sum_tab_diff=sum_tab_diff.reindex(columns=['Candidates','Initial Count','C05','Round_1','C06','Round_2','C01','Round_3','C02','Round_4'])
+sum_tab_diff=sum_tab_diff.reindex(columns=['Candidates','Initial_Count','C05','Round_1','C06','Round_2','C01','Round_3','C02','Round_4'])
 print(sum_tab_diff)
 
 #condorcet calculation: iterate through rows in irv_cond and count when candidate A before B, A before C, etc.
@@ -271,4 +272,6 @@ cond_percent=round(100*combo_pivot/(combo_pivot+comboT),2)
 print("\n Pairwise Comparison Table (percentages)")
 print(cond_percent)
 
-    
+
+
+
