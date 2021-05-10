@@ -30,7 +30,7 @@ app.layout = html.Div([
     html.Div(id='my-output'),
     #labelStyle={'display': 'inline-block'},
     
-    #make grid of selectable first choice percents 
+    #make grid of selectable first choices and percents 
     '''html.Label('Dropdown'),
     dcc.Dropdown(
         options=[
@@ -43,6 +43,18 @@ app.layout = html.Div([
 
     ], style={'columnCount': 1})
 
+    #make grid of group modifiers and candidates rankings
+    
+    
+    
+    #run sim button
+    #--------------------------------------------------
+    
+    #display first and second choices graph and summary table round by round
+    
+    #display final summary table
+    
+    #display sankey diagram
 
 @app.callback(
     Output(component_id='my-output', component_property='children'),
