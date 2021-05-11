@@ -241,6 +241,33 @@ for i in range(3,8):
                 #print(irv_cond.columns[i]+'>'+irv_cond.columns[j])
                 #add less to count when in later columns, total index can't be greater than 7
                 #combos.append(irv_cond.columns[i]+'>'+irv_cond.columns[j])
+                
+#thought about this a bit more (replaces 235 to 243)
+'''for row in range(len(irv_cond)): #look at each row
+    #print(irv_cond.loc[[row]])
+    active=irv_cond.iloc[row,3:8].to_numpy() #read candidate slice from row into variable
+    #print(active)
+    cond_list_2=[]
+    for i in range(0,4): #move through cols
+        for j in range(1,5):
+            if(i<j): 
+                comb_add=str(active[i])+'>'+str(active[j])
+                if comb_add not in cond_list_2 and active[i]!=active[j]:
+                    combos.append(comb_add) #add condorcet combinations to list
+                    cond_list_2.append(comb_add)
+                    #print(comb_add)
+    #print(cond_list_2)
+    entry=list(set(can_list_cond)-set(active)) #candidates in race not named in existing combinations
+    #print(entry)
+    for combo in cond_list_2: #what combos were generated above
+        if 'nan' in combo and 'nan>nan' not in combo: #if combo is form CX>nan
+            for can in can_list_cond: #iterate through row to see which candidates are named
+                if can in combo: #if CX was in CX>nan combo you just added
+                    for ent in entry:
+                        comb_add_null=str(can)+">"+str(ent)
+                        if comb_add_null not in cond_list_2:
+                            combos.append(comb_add_null) #add candidates in list of candidates that are not in combination 
+                            #print(comb_add_null)'''
   
 values, counts = np.unique(combos, return_counts=True) #count unique combinations \long compute time
 #print(values)
