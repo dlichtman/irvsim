@@ -6,6 +6,9 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_table
+import pandas as pd
+from collections import OrderedDict
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -15,7 +18,7 @@ app.layout = html.Div([
     html.H1("Instant Runoff Simulator"),
     
     #Number of candidates, input flows to make list of name entries
-    html.Label('Enter in number of candidates'),
+    html.Label('Enter in NUMBER of candidates'),
     dcc.Input(id='numcan', value='', type='number'),
     
     #make list of candidate names to be entered number of candidates long
@@ -31,17 +34,27 @@ app.layout = html.Div([
     #labelStyle={'display': 'inline-block'},
     
     #make grid of selectable first choices and percents 
-    '''html.Label('Dropdown'),
+    html.Label('Initial Percent'),
     dcc.Dropdown(
         options=[
-            {'label': 'New York City', 'value': 'NYC'},
-            {'label': u'Montréal', 'value': 'MTL'},
-            {'label': 'San Francisco', 'value': 'SF'}
+            {'label': 'Democrat', 'value': 'D'},
+            {'label': u'Republican', 'value': 'R'},
+            {'label': 'Libertarian', 'value': 'L'},
+            {'label': 'Green', 'value': 'G'},
         ],
-        value=''
-    ),'''
+        value='',
+        style={'width':"40%"},
+        placeholder='Choose a candidate'
+    ),
+    
+ 
 
-    ], style={'columnCount': 1})
+    ], style={'columnCount': 3})
+    
+    
+    #alternative with DataTable
+    
+    
 
     #make grid of group modifiers and candidates rankings
     
@@ -62,6 +75,8 @@ app.layout = html.Div([
 )
 def update_output_div(input_value):
     return 'Output: {}'.format(input_value)
+    
+#use state to prevent changes until all percentage and candidate changes are made in table
 
 # Run app and display result inline in the notebook
-app.run_server(mode='jupyterlab')
+app.run_server(mode='inline')
