@@ -1,0 +1,179 @@
+# -*- coding: utf-8 -*-
+
+# Run this app with `python app.py` and
+# visit http://127.0.0.1:8050/ in your web browser.
+
+import dash
+from jupyter_dash import JupyterDash
+import dash_core_components as dcc
+import dash_html_components as html
+import dash_table
+import pandas as pd
+from collections import OrderedDict
+
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+app = JupyterDash(__name__, external_stylesheets=external_stylesheets)
+
+df = pd.DataFrame(OrderedDict([
+    ('Percent', ['0','25','50','75']),
+    ('Active Vote', ['Democrat','Republican','Libertarian','Green']),
+    ('Rank 2', ['Democrat','Republican','Libertarian','Green']),
+    ('Rank 3', ['Democrat','Republican','Libertarian','Green']),
+    ('Rank 4', ['Democrat','Republican','Libertarian','Green']),
+    ('Rank 5', ['Democrat','Republican','Libertarian','Green']),
+    ]))
+
+app.layout = html.Div([
+    dash_table.DataTable(
+        id='table-dropdown',
+        data=df.to_dict('records'),
+        columns=[
+            {'id': 'Percent', 'name': 'Percent', 'presentation': 'dropdown'},
+            {'id': 'Active Vote', 'name': 'Active Vote', 'presentation': 'dropdown'},
+            {'id': 'Rank 2', 'name': 'Rank 2', 'presentation': 'dropdown'},
+            {'id': 'Rank 3', 'name': 'Rank 3', 'presentation': 'dropdown'},
+            {'id': 'Rank 4', 'name': 'Rank 4', 'presentation': 'dropdown'},
+            {'id': 'Rank 5', 'name': 'Rank 5', 'presentation': 'dropdown'},
+        ],
+
+        editable=True,
+        dropdown={
+            'Percent': {
+                'options': [
+                    {'label': i, 'value': i}
+                    for i in df['Percent'].unique()
+                ]
+            },
+            
+            'Active Vote': {
+                'options': [
+                    {'label': i, 'value': i}
+                    for i in df['Active Vote'].unique()
+                ]
+            },
+            
+             'Rank 2': {
+                'options': [
+                    {'label': i, 'value': i}
+                    for i in df['Rank 2'].unique()
+                ]
+            },
+            
+             'Rank 3': {
+                'options': [
+                    {'label': i, 'value': i}
+                    for i in df['Rank 3'].unique()
+                ]
+            },
+            
+            'Rank 4': {
+                'options': [
+                    {'label': i, 'value': i}
+                    for i in df['Rank 4'].unique()
+                ]
+            },
+            
+             'Rank 5': {
+                'options': [
+                    {'label': i, 'value': i}
+                    for i in df['Rank 5'].unique()
+                ]
+            },
+        }
+    ),
+    html.Div(id='table-dropdown-container')
+])
+
+'''app.layout = html.Div([
+    html.H1("Instant Runoff Simulator"),
+    
+    #Number of candidates, input flows to make list of name entries
+    html.Label('Enter in NUMBER of candidates'),
+    dcc.Input(id='numcan', value='', type='number'),
+    
+    #make list of candidate names to be entered number of candidates long
+    #Also enter in first choice percent 
+    html.Label('Percent'),
+    #dcc.Input(value='', type='number'),
+    html.Label('Candidates'),
+    #for i in numcan:
+    dcc.Input(id='my-input', value='Enter name of candidate', type='text'),
+    #dcc.Input(id='my-input', value='Enter name of candidate 2', type='text'),
+    html.Br(),
+    html.Div(id='my-output'),
+    #labelStyle={'display': 'inline-block'},
+    
+    #make grid of selectable first choices and percents 
+    html.Label('Initial Percent'),
+    dcc.Dropdown(
+        options=[
+            {'label': 'Democrat', 'value': 'D'},
+            {'label': u'Republican', 'value': 'R'},
+            {'label': 'Libertarian', 'value': 'L'},
+            {'label': 'Green', 'value': 'G'},
+        ],
+        value='',
+        style={'width':"40%"},
+        placeholder='Choose a candidate'
+    ),
+    
+ 
+
+    ], style={'columnCount': 1})
+    
+    
+    #alternative with DataTable
+    
+  
+    
+dash_table.DataTable(
+        id='table-dropdown',
+        data=df.to_dict('records'),
+        columns=[
+            {'id': 'climate', 'name': 'climate', 'presentation': 'dropdown'},
+            {'id': 'temperature', 'name': 'temperature'},
+            {'id': 'city', 'name': 'city', 'presentation': 'dropdown'},
+        ],
+
+        editable=True,
+        dropdown={
+            'climate': {
+                'options': [
+                    {'label': i, 'value': i}
+                    for i in df['climate'].unique()
+                ]
+            },
+            'city': {
+                 'options': [
+                    {'label': i, 'value': i}
+                    for i in df['city'].unique()
+                ]
+            }
+        }
+),'''
+
+    #make grid of group modifiers and candidates rankings
+    
+    
+    
+    #run sim button
+    #--------------------------------------------------
+    
+    #display first and second choices graph and summary table round by round
+    
+    #display final summary table
+    
+    #display sankey diagram
+
+@app.callback(
+    Output(component_id='my-output', component_property='children'),
+    Input(component_id='my-input', component_property='value')
+)
+def update_output_div(input_value):
+    return 'Output: {}'.format(input_value)
+    
+#use state to prevent changes until all percentage and candidate changes are made in table
+
+# Run app and display result inline in the notebook
+app.run_server(mode='jupyterlab')
